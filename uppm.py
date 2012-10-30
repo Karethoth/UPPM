@@ -29,13 +29,12 @@ class Package:
 
 class Client( asyncore.dispatcher ):
     def __init__( self, host, port ):
-        asyncore.dispatcher.__init__( self )
-        self.create_socket( socket.AF_INET, socket.SOCK_STREAM )
-        
-        self.host = host
-        self.port = port
-
-        self.buffer = ''
+		asyncore.dispatcher.__init__( self )
+		self.create_socket( socket.AF_INET, socket.SOCK_STREAM )
+		self.host = host
+		self.port = port
+		self.buffer = ''
+		self.salt   = ''
 
     def Connect( self ):
         self.connect( (self.host, self.port) )
@@ -50,15 +49,14 @@ class Client( asyncore.dispatcher ):
         print( self.recv( 65500 ) )
 
     def writable( self ):
-        time.sleep( 1 )
-        return True
+		return True
 
     def handle_write( self ):
-        if( len( self.buffer ) > 0 ):
-               sent = self.send( self.buffer )
-               self.buffer = self.buffer[sent:]
-        else:
-               self.send( 'LIST:\r\n' )
+		if( len( self.buffer ) > 0 ):
+			sent = self.send( self.buffer )
+			self.buffer = self.buffer[sent:]
+		else:
+			self.send( 'LIST:\r\n' )
 
     def JoinPool( self, pool ):
         self.send( 'REG:'+pool+'\r\n' )
@@ -80,25 +78,53 @@ class GUI( wx.Frame ):
 	def __init__( self, *args, **kwargs ):
 		super( GUI, self ).__init__( *args, **kwargs )
 		self.InitUI()
-		
-	def InitUI( self ):
-		menubar = wx.MenuBar()
-		fileMenu = wx.Menu()
-		fileMenu.Append( wx.ID_NEW, '&New' )
-		menubar.Append( fileMenu, '&File' )
-		self.SetMenuBar( menubar )
-		
+		self.Centre()
 		self.Bind( wx.EVT_IDLE, self.Idle )
+		self.Show( True )
+
+	def InitUI( self ):
+		self.id = wx.NewId()
+		self.panel = wx.Panel( self )
+		self.panel.SetBackgroundColour( '#4f5049' )
+		vbox = wx.BoxSizer( wx.VERTICAL )
 		
+		self.topPanel = wx.Panel( self.panel )
+		self.topPanel.SetBackgroundColour( '#ededed' )
+		self.InitTopPanel()
+	
+		self.midPanel = wx.Panel( self.panel )
+		self.midPanel.SetBackgroundColour( '#a0a0a0' )
+		self.InitMidPanel()
+		
+		vbox.Add( self.topPanel, 4, wx.EXPAND|wx.TOP|wx.LEFT|wx.RIGHT, 10 )
+		vbox.Add( self.midPanel, 1, wx.EXPAND|wx.BOTTOM|wx.LEFT|wx.RIGHT, 10 )
+		self.panel.SetSizer( vbox )
+
 		self.SetSize( (400, 400) )
 		self.SetTitle( 'Pool Manager' )
-		self.Centre()
-		self.Show( True )
 		
+	def InitTopPanel( self ):
+		self.clientList = wx.ListCtrl( self.topPanel, self.id, size=(-1,250), style=wx.LC_REPORT )
+		self.clientList.InsertColumn( 0, "ClientID", width=400 )
+		pos = self.clientList.InsertStringItem( 0, "0x84jg743kds95kd73j348g848g7d64jdf649fu56" )
+		
+		sizer = wx.BoxSizer( wx.VERTICAL )
+		sizer.Add( self.clientList, 0, wx.ALL|wx.EXPAND, 5 )
+		self.topPanel.SetSizer( sizer )
+		
+		self.clientList.Show( True )
+		self.id += 1
+		
+	
+	def InitMidPanel( self ):
+		self.pkgButton = wx.Button( self.midPanel, label='Send Package' )
+		self.pkgButton.Bind( wx.EVT_BUTTON, self.SendPackagePressed )
+	
 	def Idle( self, e ):
 		asyncore.loop( count=1 )
 
-
+	def SendPackagePressed( self, e ):
+		print( "SENDING" )
 
 
 def main():
